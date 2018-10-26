@@ -1,0 +1,6 @@
+Project -> Build options... -> Linker settings: Other linker options
+`pkg-config opencv --libs`
+
+Project -> Set programs' arguments
+-image_colour=/home/student/Downloads/imageColor.jpg
+-image_bimodal=/home/student/Downloads/imageBimodal.jpg

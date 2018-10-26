@@ -61,7 +61,7 @@ int main(int argc, const char** argv)
     ///Convert the colour image to gray scale
     Mat img_gray;
     cvtColor(img2, img_gray, COLOR_BGR2GRAY);
-    imshow("This image has been coverted to gray scale!",img_gray);
+    imshow("This image has been converted to gray scale!",img_gray);
     waitKey(0);
 
     ///For-loop running through the converted image, row by row and column by column, printing the value of each pixel
