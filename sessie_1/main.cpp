@@ -175,6 +175,6 @@ int main(int argc, const char** argv)
     ///Merge the masked channels back into one image and show
     Mat masked_img3(img3.rows, img3.cols, CV_8UC3);     //Create a 3 channel image
     merge(channels_masked3,masked_img3);
-    imshow("Masked image", masked_img3);                //Show the image with the mask applied
+    imshow("Masked image (Contoured mask)", masked_img3);                //Show the image with the mask applied
     waitKey(0);
 }
