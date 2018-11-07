@@ -51,7 +51,7 @@ int main(int argc, const char** argv)
     Mat GREEN = channels[1];
     Mat RED = channels[2];
 
-    Mat mask = Mat::zeros(img1.rows, img1.cols, CV_8UC1);   //Initializing the matrix on all zeroes
+    Mat mask = Mat::zeros(img1.rows, img1.cols, CV_8UC1);   //Initializing the matrix on all zeroes, 1 channel
 
     ///Fill the mask using matrix operations
     //The mask is based on a skin colour filter that can be found in the literature
@@ -64,8 +64,8 @@ int main(int argc, const char** argv)
     channels_masked[2] = channels[2] & mask;
 
     ///Merge the masked channels back into one image
-    Mat masked_img(img1.rows, img1.cols, CV_8UC3);
-    merge(channels,masked_img);
+    Mat masked_img(img1.rows, img1.cols, CV_8UC3);  //Create a 3 channel image
+    merge(channels_masked,masked_img);
 
     mask = mask * 255;                          //Set the ones in the mask to maximum brightness
     imshow("Mask", mask);                       //Show the mask
@@ -128,39 +128,53 @@ int main(int argc, const char** argv)
     waitKey(0);
 
     ///Split the image into BGR channels
-    split(img3, channels);                      //Split the colour image into three different channels
-    BLUE = channels[0];                         //channels[0] is BLUE, channels[1] is GREEN and channels[2] is RED
-    GREEN = channels[1];
-    RED = channels[2];
+    vector<Mat> channels3;
+    split(img3, channels3);                      //Split the colour image into three different channels
+    Mat BLUE3 = channels3[0];                    //channels[0] is BLUE, channels[1] is GREEN and channels[2] is RED
+    Mat GREEN3 = channels3[1];
+    Mat RED3 = channels3[2];
 
-    mask = Mat::zeros(img3.rows, img3.cols, CV_8UC1);   //Initializing the matrix on all zeroes
+    Mat mask3 = Mat::zeros(img3.rows, img3.cols, CV_8UC1);   //Initializing the matrix on all zeroes, 1 channel
 
     ///Fill the mask using matrix operations
     //The mask is based on a skin colour filter that can be found in the literature
-    mask = (RED>95) & (GREEN>40) & (BLUE>20) & ((max(RED,max(GREEN,BLUE)) - min(RED,min(GREEN,BLUE)))>15) & (abs(RED-GREEN)>15) & (RED>GREEN) & (RED>BLUE);
+    mask3 = (RED3>95) & (GREEN3>40) & (BLUE3>20) & ((max(RED3,max(GREEN3,BLUE3)) - min(RED3,min(GREEN3,BLUE3)))>15) & (abs(RED3-GREEN3)>15) & (RED3>GREEN3) & (RED3>BLUE3);
 
     ///Opening
-    erode(mask, mask, Mat(), Point(-1,-1), 2);
-    dilate(mask, mask, Mat(), Point(-1,-1), 2);
-    imshow("Mask after opening", mask);
+    erode(mask3, mask3, Mat(), Point(-1,-1), 2);
+    dilate(mask3, mask3, Mat(), Point(-1,-1), 2);
+    imshow("Mask after opening", mask3);
     waitKey(0);
 
     ///Closing
-    dilate(mask, mask, Mat(), Point(-1,-1), 2);
-    erode(mask, mask, Mat(), Point(-1,-1), 2);
-    imshow("Mask after opening and closing", mask);
+    dilate(mask3, mask3, Mat(), Point(-1,-1), 5);
+    erode(mask3, mask3, Mat(), Point(-1,-1), 5);
+    imshow("Mask after opening and closing", mask3);
     waitKey(0);
 
-    /*
+    ///Creating blobs around the mask openings by drawing contours
     vector< vector<Point> > contours;
-    findContours(mask.clone(), contours, RETR_EXTERNAL, CHAIN_APPROX_NONE);
+    findContours(mask3.clone(), contours, RETR_EXTERNAL, CHAIN_APPROX_NONE);
     vector< vector<Point> > hulls;
-    for(size_t i=0, i<contours.size(), i++){
+    for(size_t i=0; i<contours.size(); i++){
         vector<Point> hull;
         convexHull(contours[i], hull);
-        hulls.push_back(hull)   //achteraan matrix bijduwen
+        hulls.push_back(hull);   //Push this hull onto the back of the hulls vector
     }
 
-    drawContours(mask, hulls, -1, 255, -1);
-    imshow mask*/
+    drawContours(mask3, hulls, -1, 255, -1);
+    imshow("Mask after drawing contours", mask3);
+    waitKey(0);
+
+    ///Apply the mask to every channel
+    vector<Mat> channels_masked3 = channels3;
+    channels_masked3[0] = channels3[0] & mask3;
+    channels_masked3[1] = channels3[1] & mask3;
+    channels_masked3[2] = channels3[2] & mask3;
+
+    ///Merge the masked channels back into one image and show
+    Mat masked_img3(img3.rows, img3.cols, CV_8UC3);     //Create a 3 channel image
+    merge(channels_masked3,masked_img3);
+    imshow("Masked image", masked_img3);                //Show the image with the mask applied
+    waitKey(0);
 }
