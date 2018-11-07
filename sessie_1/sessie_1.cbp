@@ -11,9 +11,13 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
+				<Option parameters="-image_colour=/home/student/Downloads/imageColor.jpg -image_bimodal=/home/student/Downloads/imageBimodal.jpg -image_adapted=/home/student/Downloads/imageColorAdapted.jpg" />
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>
+				<Linker>
+					<Add option="`pkg-config opencv --libs`" />
+				</Linker>
 			</Target>
 			<Target title="Release">
 				<Option output="bin/Release/sessie_1" prefix_auto="1" extension_auto="1" />

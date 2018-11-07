@@ -11,6 +11,7 @@ int main(int argc, const char** argv)
         "{help h usage ?  |      | print this message   }"
         "{image_colour p1 |      | <required> path to colour image   }"
         "{image_bimodal p2|      | <required> path to bimodal image  }"
+        "{image_adapted p3|      | <required> path to adapted colour image   }"
     );
 
     if (parser.has("help"))
@@ -23,14 +24,16 @@ int main(int argc, const char** argv)
     ///Collect data from arguments
     string image_colour_loc(parser.get<string>("image_colour"));
     string image_bimodal_loc(parser.get<string>("image_bimodal"));
+    string image_adapted_loc(parser.get<string>("image_adapted"));
     //Check of de argumenten niet leeg zijn
-    if ( image_colour_loc.empty() || image_bimodal_loc.empty() ){
+    if ( image_colour_loc.empty() || image_bimodal_loc.empty() || image_adapted_loc.empty() ){
         cerr << "There's something wrong with your arguments." << endl;
         parser.printMessage();
         return -1;
     }
 
-    ///SEGMENTING SKIN PIXELS
+
+    ///1.1: THRESHOLDING: SEGMENTING SKIN PIXELS
 
     ///Read and show the first image
     Mat img1 = imread(image_colour_loc);
@@ -72,7 +75,7 @@ int main(int argc, const char** argv)
     waitKey(0);
 
 
-    ///SEGMENTING TEXT
+    ///1.1: THRESHOLDING: SEGMENTING TEXT
 
     ///Read and show the second image
     Mat img2 = imread(image_bimodal_loc);
@@ -101,27 +104,54 @@ int main(int argc, const char** argv)
     threshold(img2_gray_eq, img2_thresh, 0, 255, THRESH_OTSU | THRESH_BINARY);
     imshow("Bimodal image thresholded after histogram equalization", img2_thresh);
     waitKey(0);
-/*
+
+    ///Apply Contrast Limited Adaptive Histogram Equalization (CLAHE) and threshold again
     Mat result_CLAHE;
     Ptr<CLAHE> clahe_ptr = createCLAHE();
-    clahe_ptr->setTileGridSize(Size(15,15));
+    clahe_ptr->setTilesGridSize(Size(15,15));
     clahe_ptr->setClipLimit(1);
-    clahe_ptr->apply(gray_ticket.clone(), result_CLAHE);
-    threshold();
-    */
+    clahe_ptr->apply(img2_gray.clone(), result_CLAHE);
+    threshold(result_CLAHE, img2_thresh, 0, 255, THRESH_OTSU | THRESH_BINARY);
+    imshow("Bimodal image thresholded after CLAHE", img2_thresh);
+    waitKey(0);
 
+
+    ///1.2: EROSION AND DILATION
+
+    ///Read and show the third image
+    Mat img3 = imread(image_adapted_loc);
+    if ( img3.empty() ){                        //Check if the image can be found
+        cerr << "Image 3 not found.";
+        return -1;
+    }
+    imshow("Adapted colour image", img3);       //Show the image
+    waitKey(0);
+
+    ///Split the image into BGR channels
+    split(img3, channels);                      //Split the colour image into three different channels
+    BLUE = channels[0];                         //channels[0] is BLUE, channels[1] is GREEN and channels[2] is RED
+    GREEN = channels[1];
+    RED = channels[2];
+
+    mask = Mat::zeros(img3.rows, img3.cols, CV_8UC1);   //Initializing the matrix on all zeroes
+
+    ///Fill the mask using matrix operations
+    //The mask is based on a skin colour filter that can be found in the literature
+    mask = (RED>95) & (GREEN>40) & (BLUE>20) & ((max(RED,max(GREEN,BLUE)) - min(RED,min(GREEN,BLUE)))>15) & (abs(RED-GREEN)>15) & (RED>GREEN) & (RED>BLUE);
+
+    ///Opening
+    erode(mask, mask, Mat(), Point(-1,-1), 2);
+    dilate(mask, mask, Mat(), Point(-1,-1), 2);
+    imshow("Mask after opening", mask);
+    waitKey(0);
+
+    ///Closing
+    dilate(mask, mask, Mat(), Point(-1,-1), 2);
+    erode(mask, mask, Mat(), Point(-1,-1), 2);
+    imshow("Mask after opening and closing", mask);
+    waitKey(0);
 
     /*
-    Masken
-    erode en dilate moeten op mask gebeuren
-    erode(mask, mask, Mat(), Point(-1,-1), 2);
-    dilate();
-    imshow
-
-    dilate();
-    erode();
-    imshow
-
     vector< vector<Point> > contours;
     findContours(mask.clone(), contours, RETR_EXTERNAL, CHAIN_APPROX_NONE);
     vector< vector<Point> > hulls;
@@ -132,5 +162,5 @@ int main(int argc, const char** argv)
     }
 
     drawContours(mask, hulls, -1, 255, -1);
-    imshow mask
+    imshow mask*/
 }
