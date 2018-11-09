@@ -1,9 +1,0 @@
-# depslib dependency file v1.0
-1540540255 source:/home/student/Github/2018_beeldinterpretatie_Verschaeren_Wout/sessie_1/main.cpp
-	<iostream>
-	<opencv2/opencv.hpp>
-
-1541606740 source:/home/student/2018_beeldinterpretatie_Verschaeren_Wout/sessie_1/main.cpp
-	<iostream>
-	<opencv2/opencv.hpp>
-

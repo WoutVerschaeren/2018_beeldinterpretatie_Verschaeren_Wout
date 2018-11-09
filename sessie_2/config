@@ -1,0 +1,8 @@
+Project -> Build options... -> Linker settings: Other linker options
+`pkg-config opencv --libs`
+
+Project -> Set programs' arguments
+-sign1=/home/student/Downloads/sign.jpg
+-sign2=/home/student/Downloads/sign2.jpg
+-sign3=/home/student/Downloads/sign3.jpg
+-sign4=/home/student/Downloads/sign4.jpg
