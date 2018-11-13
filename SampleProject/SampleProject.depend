@@ -1,0 +1,5 @@
+# depslib dependency file v1.0
+1542147627 source:/home/wout/Documents/Schoolwerk/Labo_Visie/2018_beeldinterpretatie_Verschaeren_Wout/SampleProject/main.cpp
+	<iostream>
+	<opencv2/opencv.hpp>
+

@@ -2,22 +2,25 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="sessie_2" />
+		<Option title="SampleProject" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="Debug">
-				<Option output="bin/Debug/sessie_2" prefix_auto="1" extension_auto="1" />
+				<Option output="bin/Debug/SampleProject" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="-sign1=/home/wout/Downloads/sign.jpg -sign2=/home/wout/Downloads/sign2.jpg -sign3=/home/wout/Downloads/sign3.jpg -sign4=/home/wout/Downloads/sign4.jpg" />
+				<Option parameters="-image_colour=/home/wout/Downloads/imageColor.jpg -image_bimodal=/home/wout/Downloads/imageBimodal.jpg -image_adapted=/home/wout/Downloads/imageColorAdapted.jpg" />
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>
+				<Linker>
+					<Add option="`pkg-config opencv --libs`" />
+				</Linker>
 			</Target>
 			<Target title="Release">
-				<Option output="bin/Release/sessie_2" prefix_auto="1" extension_auto="1" />
+				<Option output="bin/Release/SampleProject" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/Release/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
