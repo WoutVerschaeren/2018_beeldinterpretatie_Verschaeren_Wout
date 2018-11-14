@@ -7,13 +7,13 @@ using namespace cv;
 const int slider_max_H = 180;
 const int slider_max_S = 255;
 
-int alpha_slider_uH = 10;       //upper value for Hue
-int alpha_slider_lH = 168;      //lower value for Hue
-int alpha_slider_maxS = 115;    //Saturation
+int uH;                         //upper value for Hue
+int lH;                         //lower value for Hue
+int maxS;                       //max Saturation
 
-int uH = 10;                //upper value for Hue
-int lH = 168;               //lower value for Hue
-int maxS = 115;             //max Saturation
+int alpha_slider_uH = 2;        //slider for uH
+int alpha_slider_lH = 168;      //slider for lH
+int alpha_slider_maxS = 3;      //slider for maxS
 
 
 static void uH_on_trackbar(int, void *)
@@ -31,6 +31,11 @@ static void S_on_trackbar(int, void *)
 }
 
 
+///Function that takes in a colour image, and returns a masked image
+//Operations that happen in between are:
+//  Opening, to reduce the noise on the mask
+//  Creating blobs around the mask, by drawing contours
+//  Keeping the largest blob as the final mask
 Mat HSVSegment(Mat img)
 {
     //Split the image into three different channels
@@ -67,6 +72,32 @@ Mat HSVSegment(Mat img)
     erode(maskHSV, maskHSV, Mat(), Point(-1,-1), 2);
     dilate(maskHSV, maskHSV, Mat(), Point(-1,-1), 2);
 
+    ///Creating blobs around the mask openings by drawing contours
+    vector< vector<Point> > contours;
+    findContours(maskHSV.clone(), contours, RETR_EXTERNAL, CHAIN_APPROX_NONE);
+
+    //We only want the sign itself, no other objects
+    //We assume the sign is the largest blob in the image and keep it in a variable
+    //Draw a hull around the contour
+    vector<Point> hull;
+    convexHull(contours[0], hull);
+    //Start by setting the first hull as the largest
+    vector<Point> largest_blob = hull;
+    for (size_t i = 0; i < contours.size(); i++)
+    {
+        //If we find a larger contour, draw a hull around it and set it as the largest
+        if (contourArea(contours[i]) > contourArea(largest_blob))
+        {
+            convexHull(contours[i], hull);
+            largest_blob = hull;
+        }
+    }
+
+    //Now we need to draw the contour of the largest blob
+    vector< vector<Point> > hullContour;
+    hullContour.push_back(largest_blob);
+    drawContours(maskHSV, hullContour, -1, 255, -1);
+
     ///Apply the mask to every channel
     vector<Mat> channels_maskedHSV = channelsHSV;
     channels_maskedHSV[0] = channelsBGR[0] & maskHSV;
@@ -82,7 +113,8 @@ Mat HSVSegment(Mat img)
     return masked_imgHSV;
 }
 
-int slider(Mat img, int i)
+///Function to create a window with trackbars to finetune the mask parameters
+void slider(Mat img, int i)
 {
     String imTitle = "Masked image HSV " + to_string(i) + " (press enter to continue)";
     namedWindow(imTitle, WINDOW_AUTOSIZE); // Create Window
@@ -225,7 +257,7 @@ int main(int argc, const char** argv)
         waitKey(0);
 
 
-        ///2.4: TRACKBARS
+        ///2.3 & 2.4: TRACKBARS AND CONNECTED COMPONENTS
         slider(img, i);
 
 

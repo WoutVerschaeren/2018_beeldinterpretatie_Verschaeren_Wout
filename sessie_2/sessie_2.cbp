@@ -11,7 +11,7 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="-sign1=/home/student/Downloads/sign.jpg -sign2=/home/student/Downloads/sign2.jpg -sign3=/home/student/Downloads/sign3.jpg -sign4=/home/student/Downloads/sign4.jpg" />
+				<Option parameters="-sign1=/home/wout/Downloads/sign.jpg -sign2=/home/wout/Downloads/sign2.jpg -sign3=/home/wout/Downloads/sign3.jpg -sign4=/home/wout/Downloads/sign4.jpg" />
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>
