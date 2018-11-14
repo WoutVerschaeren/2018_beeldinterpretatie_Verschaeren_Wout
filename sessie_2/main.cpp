@@ -4,26 +4,30 @@
 using namespace std;
 using namespace cv;
 
-const int alpha_slider_max1 = 180;
-int alpha_slider1 = 168;
-const int alpha_slider_max2 = 180;
-int alpha_slider2 = 10;
-const int alpha_slider_max3 = 254;
-int alpha_slider3 = 115;
+const int slider_max_H = 180;
+const int slider_max_S = 255;
 
-double alpha;
-double beta;
-Mat src1;
-Mat src2;
-Mat dst;
+int alpha_slider_uH = 10;       //upper value for Hue
+int alpha_slider_lH = 168;      //lower value for Hue
+int alpha_slider_maxS = 115;    //Saturation
+
+int uH = 10;                //upper value for Hue
+int lH = 168;               //lower value for Hue
+int maxS = 115;             //max Saturation
 
 
-static void on_trackbar1( int, void* )
+static void uH_on_trackbar(int, void *)
 {
-   alpha = (double) alpha_slider1/alpha_slider_max1;
-   beta = ( 1.0 - alpha );
-   addWeighted( src1, alpha, src2, beta, 0.0, dst);
-   imshow( "Linear Blend", dst );
+    uH = alpha_slider_uH;
+}
+static void lH_on_trackbar(int, void *)
+{
+    lH = alpha_slider_lH;
+}
+
+static void S_on_trackbar(int, void *)
+{
+    maxS = alpha_slider_maxS;
 }
 
 
@@ -51,11 +55,13 @@ Mat HSVSegment(Mat img)
     Mat maskHSV = Mat::zeros(imgHSV.rows, imgHSV.cols, CV_8UC1);
     Mat maskHSV1 = Mat::zeros(imgHSV.rows, imgHSV.cols, CV_8UC1);
     Mat maskHSV2 = Mat::zeros(imgHSV.rows, imgHSV.cols, CV_8UC1);
+    Mat maskHSV3 = Mat::zeros(imgHSV.rows, imgHSV.cols, CV_8UC1);
 
     ///Fill the masks using matrix operations
-    maskHSV1 = (H<10);
-    maskHSV2 = (H>168);
-    maskHSV = maskHSV1 | maskHSV2;
+    maskHSV1 = (H < uH);
+    maskHSV2 = (H > lH);
+    maskHSV3 = (S < maxS);
+    maskHSV = maskHSV1 | maskHSV2 | maskHSV3;
 
     ///Opening to reduce noise on the mask
     erode(maskHSV, maskHSV, Mat(), Point(-1,-1), 2);
@@ -76,34 +82,39 @@ Mat HSVSegment(Mat img)
     return masked_imgHSV;
 }
 
-/*
-int hsvsegment_slider(Mat sign_image)
+int slider(Mat img, int i)
 {
-    namedWindow("Window: ESC to exit"); // Create Window
-    resizeWindow("Window: ESC to exit", 200, 200);//resize it (it gets auto-sized later)
-    createTrackbar("max H", "Window: ESC to exit", &alpha_slider1, alpha_slider_max1, on_trackbar1); //add on the three trackbars
-    createTrackbar("min H", "Window: ESC to exit", &alpha_slider2, alpha_slider_max2, on_trackbar2);
-    createTrackbar("S", "Window: ESC to exit", &alpha_slider3, alpha_slider_max3, on_trackbar3);
-    on_trackbar1(alpha_slider1,0);
-    on_trackbar2(alpha_slider2,0);
-    on_trackbar3(alpha_slider3,0);
+    String imTitle = "Masked image HSV " + to_string(i) + " (press enter to continue)";
+    namedWindow(imTitle, WINDOW_AUTOSIZE); // Create Window
+    //Create H sliders
+    createTrackbar("Upper H", imTitle, &alpha_slider_uH, slider_max_H, uH_on_trackbar);
+    createTrackbar("Lower H", imTitle, &alpha_slider_lH, slider_max_H, lH_on_trackbar);
+    //Create S slider
+    createTrackbar("Max S", imTitle, &alpha_slider_maxS, slider_max_S, S_on_trackbar);
 
-    Mat segmented_image;
-    Mat concat_image;
+    uH_on_trackbar(alpha_slider_uH, 0);
+    lH_on_trackbar(alpha_slider_lH, 0);
+    S_on_trackbar(alpha_slider_maxS, 0);
+
+    Mat imgHSV;
+    Mat imgConcat;
     while (true)
     {
-        segmented_image = hsvsegment_mat(sign_image);   //segment the image using the hsvsegment_mat function (which also used the values h1,h2,s1)
-        hconcat(sign_image, segmented_image, concat_image); //concatenate original and segmented image
-        imshow("Window: ESC to exit",concat_image); //show result
-        int key = waitKey(10);
+        //Split the image into HSV channels
+        Mat masked_imgHSV = HSVSegment(img);
 
-        if (key == 27) //exit if ESC is pressed
+        //Show the image with the mask applied
+        imshow(imTitle, masked_imgHSV);
+
+        int key = waitKey(10);
+        if ( key == 13 ) //enter
         {
-            return 0;
+            destroyWindow(imTitle);
+            break;
         }
     }
 }
-*/
+
 
 
 int main(int argc, const char** argv)
@@ -206,53 +217,16 @@ int main(int argc, const char** argv)
 
         ///2.2: SEGMENTING IN HSV COLOUR SPACE
 
-        ///Split the image into HSV channels
+        //Split the image into HSV channels
         Mat masked_imgHSV = HSVSegment(img);
-        /*
-        Mat img_hsv;
-        cvtColor(img, img_hsv, COLOR_BGR2HSV);
-        //Split the HSV image into three different channels
-        vector<Mat> channelsHSV;
-        split(img_hsv, channelsHSV);
-        //channels[0] is Hue, channels[1] is Saturation and channels[2] is Value (Intensity)
-        Mat H = channelsHSV[0];
-        Mat S = channelsHSV[1];
-        Mat V = channelsHSV[2];
-
-        //Initializing the matrices on all zeroes, 1 channel
-        Mat mask_hsv = Mat::zeros(img_hsv.rows, img_hsv.cols, CV_8UC1);
-        Mat mask_hsv1 = Mat::zeros(img_hsv.rows, img_hsv.cols, CV_8UC1);
-        Mat mask_hsv2 = Mat::zeros(img_hsv.rows, img_hsv.cols, CV_8UC1);
-
-        ///Fill the masks using matrix operations
-        mask_hsv1 = (H<10);
-        mask_hsv2 = (H>168);
-        mask_hsv = mask_hsv1 | mask_hsv2;
-
-        ///Apply the mask to every channel
-        vector<Mat> channels_masked_hsv = channelsBGR;
-        channels_masked_hsv[0] = channelsBGR[0] & mask_hsv;
-        channels_masked_hsv[1] = channelsBGR[1] & mask_hsv;
-        channels_masked_hsv[2] = channelsBGR[2] & mask_hsv;
-
-        ///Merge the masked channels back into one image
-        //Create a 3 channel image
-        Mat masked_img_hsv(img_hsv.rows, img_hsv.cols, CV_8UC3);
-        merge(channels_masked_hsv,masked_img_hsv);
-        */
 
         //Show the image with the mask applied
         imshow("Masked image HSV " + to_string(i), masked_imgHSV);
         waitKey(0);
 
-        /*
-        namedWindow("Linear Blend", WINDOW_AUTOSIZE); // Create Window
-        char TrackbarName[50];
-        sprintf( TrackbarName, "Alpha x %d", alpha_slider_max1 );
-        createTrackbar( TrackbarName, "Linear Blend", &alpha_slider1, alpha_slider_max1, on_trackbar1 );
-        on_trackbar1( alpha_slider1, 0 );
-        waitKey(0);
-        */
+
+        ///2.4: TRACKBARS
+        slider(img, i);
 
 
         i++;
