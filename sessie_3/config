@@ -1,0 +1,6 @@
+Project -> Build options... -> Linker settings: Other linker options
+`pkg-config opencv --libs`
+
+Project -> Set programs' arguments
+-image_source=/home/student/Downloads/recht.jpg
+-image_template=/home/student/Downloads/template.jpg

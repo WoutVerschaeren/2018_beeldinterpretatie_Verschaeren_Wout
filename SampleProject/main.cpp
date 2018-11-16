@@ -8,10 +8,9 @@ int main(int argc, const char** argv)
 {
     ///Adding a little help option and command line parser input
     CommandLineParser parser(argc, argv,
-        "{help h usage ?  |      | print this message   }"
-        "{image_colour p1 |      | <required> path to colour image   }"
-        "{image_bimodal p2|      | <required> path to bimodal image  }"
-        "{image_adapted p3|      | <required> path to adapted colour image   }"
+        "{help h usage ?   |      | print this message   }"
+        "{image_search p1  |      | <required> path to image in which the template needs to be found   }"
+        "{image_template p2|      | <required> path to image of the template  }"
     );
 
     if (parser.has("help"))
@@ -22,11 +21,10 @@ int main(int argc, const char** argv)
     }
 
     ///Collect data from arguments
-    string image_colour_loc(parser.get<string>("image_colour"));
-    string image_bimodal_loc(parser.get<string>("image_bimodal"));
-    string image_adapted_loc(parser.get<string>("image_adapted"));
+    string image_search_loc(parser.get<string>("image_search"));
+    string image_template_loc(parser.get<string>("image_template"));
     //Check of de argumenten niet leeg zijn
-    if ( image_colour_loc.empty() || image_bimodal_loc.empty() || image_adapted_loc.empty() ){
+    if ( image_search_loc.empty() || image_template_loc.empty() ){
         cerr << "There's something wrong with your arguments." << endl;
         parser.printMessage();
         return -1;
