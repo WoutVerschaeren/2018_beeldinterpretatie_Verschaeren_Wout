@@ -1,8 +1,6 @@
  # Public repository voor het vak beeldinterpretatie (practica) 2018 - 2019
 
-Per sessie vind je een folder met alle nuttige informatie gekoppeld aan de opdracht van die week.
-
-Stelselmatig zullen de sessies toegevoegd worden aan deze repository.
+Per sessie vind je een folder met het programma voor de opdracht die week.
 
 ## Planning lessen
 
