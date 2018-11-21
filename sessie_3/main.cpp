@@ -5,7 +5,7 @@ using namespace std;
 using namespace cv;
 
 ///Finds a match in the source image src using the template tmpl
-void match(Mat src, Mat tmpl)
+void matchSingle(Mat src, Mat tmpl)
 {
     Mat result;
 
@@ -14,26 +14,47 @@ void match(Mat src, Mat tmpl)
     normalize(result, result, 0, 1, NORM_MINMAX, -1, Mat());
     //SQDIFF represents the best hits with the lowest values: invert!
     result = 1-result;
-    imshow("Match map", result); waitKey(0);
+    imshow("Match map single", result); waitKey(0);
 
-    /*///Find the best hit
+    ///Find the best hit
     double minVal; double maxVal; Point minLoc; Point maxLoc;
     Point matchLoc;
     minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc, Mat());
-    matchLoc = maxLoc;*/
+    matchLoc = maxLoc;
 
     Mat mask;
     threshold(result, mask, 0.9, 1, THRESH_BINARY);
     mask.convertTo(mask, CV_8UC1);
     mask *= 255;
-    imshow("Thresholded match map", mask); waitKey(0);
+    imshow("Thresholded match map single", mask); waitKey(0);
 
-/*
     Mat best_hit = src.clone();
     rectangle(best_hit, matchLoc, Point(matchLoc.x + tmpl.cols , matchLoc.y + tmpl.rows), Scalar::all(0), 2, 8, 0);
     imshow("Result", result);
     imshow("Best hit", best_hit);
-    waitKey(0);*/
+    waitKey(0);
+}
+
+void matchAll(Mat src, Mat tmpl)
+{
+    Mat result;
+
+    ///Do the matching and normalize
+    matchTemplate(src.clone(), tmpl, result, TM_CCORR);
+    normalize(result, result, 0, 1, NORM_MINMAX, -1, Mat());
+    imshow("Match map all", result); waitKey(0);
+
+    ///Find the min and max
+    double minVal; double maxVal; Point minLoc; Point maxLoc;
+    Point matchLoc;
+    minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc, Mat());
+
+    Mat mask;
+    //0.602 is an empirical value: low enough to detect all matches, high enough to not let mask openings touch each other
+    inRange(result, maxVal * 0.602, maxVal, mask);
+    mask.convertTo(mask, CV_8UC1);
+    mask *= 255;
+    imshow("Thresholded match map all", mask); waitKey(0);
 
     //Multiple hits
     Mat all_hits = src.clone();
@@ -113,5 +134,7 @@ int main(int argc, const char** argv)
 
 
     ///Find a match in the source image
-    match(img_src, img_tmpl);
+    matchSingle(img_src, img_tmpl);
+    ///Find all matches
+    matchAll(img_src, img_tmpl);
 }
