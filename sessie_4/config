@@ -1,0 +1,8 @@
+Project -> Build options... -> Linker settings: Other linker options
+`pkg-config opencv --libs`
+
+Project -> Set programs' arguments
+-kb_obj=/home/student/Downloads/kinderbueno_object.png
+-kb_img=/home/student/Downloads/kinderbueno_image.png
+-fcf_obj=/home/student/Downloads/fitness_object.png
+-fcf_img=/home/student/Downloads/fitness_image.png
