@@ -4,6 +4,83 @@
 using namespace std;
 using namespace cv;
 
+Mat KeyPointDetection(Mat img, int keypointType)
+{
+    /// Detect features using ORB, BRISK, or AKAZE
+    Ptr<Feature2D> detector;
+    string method;
+    switch(keypointType)
+    {
+        case 1 :
+            {
+                Ptr<ORB> detector_ORB = ORB::create();
+                detector = detector_ORB;
+                method = "ORB";
+            }
+            break;
+        case 2 :
+            {
+                Ptr<BRISK> detector_BRISK = BRISK::create();
+                detector = detector_BRISK;
+                method = "BRISK";
+            }
+            break;
+        case 3 :
+            {
+                Ptr<AKAZE> detector_AKAZE = AKAZE::create();
+                detector = detector_AKAZE;
+                method = "AKAZE";
+            }
+            break;
+    }
+
+    //Detect keypoints
+    vector<KeyPoint> keypointsImg;
+    detector->detect(img.clone(), keypointsImg);
+
+    return keypointsImg;
+}
+
+Mat KeyPointDescription(Mat img, vector<KeyPoint> keypoints, int keyPointType)
+{
+    /// Detect features using ORB, BRISK, or AKAZE
+    Ptr<Feature2D> descriptor;
+    string method;
+    switch(keypointType)
+    {
+        case 1 :
+            {
+                Ptr<ORB> descriptor_ORB = ORB::create();
+                descriptor = descriptor_ORB;
+                method = "ORB";
+            }
+            break;
+        case 2 :
+            {
+                Ptr<BRISK> descriptor_BRISK = BRISK::create();
+                descriptor = descriptor_BRISK;
+                method = "BRISK";
+            }
+            break;
+        case 3 :
+            {
+                Ptr<AKAZE> descriptor_AKAZE = AKAZE::create();
+                descriptor = descriptor_AKAZE;
+                method = "AKAZE";
+            }
+            break;
+    }
+
+    //Detect features and compute their descriptors
+    vector<KeyPoint> keypointsImg;
+    Mat descriptorsImg;
+    //descriptor->detectAndCompute(obj.clone(), Mat(), keypointsObj, descriptorsObj);
+    descriptor->compute(img.clone(), Mat(), keypoints, descriptorsImg);
+
+    return descriptorsImg;
+}
+
+
 ///Detect and draw features using ORB (1), BRISK (2), and AKAZE (3)
 /*
     obj_loc: location of the template image
@@ -22,37 +99,24 @@ int detectKeypoints(string obj_loc, string img_loc, int keypointType)
     }
 
     /// Detect features using ORB, BRISK, or AKAZE
-    Ptr<Feature2D> detector;
     string method;
     switch(keypointType)
     {
         case 1 :
-            {
-                Ptr<ORB> detector_ORB = ORB::create(500);
-                detector = detector_ORB;
-                method = "ORB";
-            }
+            method = "ORB";
             break;
         case 2 :
-            {
-                Ptr<BRISK> detector_BRISK = BRISK::create(500);
-                detector = detector_BRISK;
-                method = "BRISK";
-            }
+            method = "BRISK";
             break;
         case 3 :
-            {
-                Ptr<AKAZE> detector_AKAZE = AKAZE::create(500);
-                detector = detector_AKAZE;
-                method = "AKAZE";
-            }
+            method = "AKAZE";
             break;
     }
 
     //Detect keypoints
     vector<KeyPoint> keypointsObj, keypointsImg;
-    detector->detect(obj.clone(), keypointsObj);
-    detector->detect(img.clone(), keypointsImg);
+    keypointsObj = KeyPointDetection(obj.clone(), keypointType);
+    keypointsImg = KeyPointDetection(img.clone(), keypointType);
 
     //Draw keypoints
     Mat img_keypointsObj, img_keypointsImg;
@@ -85,38 +149,28 @@ int detectAndMatch(string obj_loc, string img_loc, int keypointType)
     }
 
     /// Detect features using ORB, BRISK, or AKAZE
-    Ptr<Feature2D> detector;
     string method;
     switch(keypointType)
     {
         case 1 :
-            {
-                Ptr<ORB> detector_ORB = ORB::create(500);
-                detector = detector_ORB;
-                method = "ORB";
-            }
+            method = "ORB";
             break;
         case 2 :
-            {
-                Ptr<BRISK> detector_BRISK = BRISK::create(500);
-                detector = detector_BRISK;
-                method = "BRISK";
-            }
+            method = "BRISK";
             break;
         case 3 :
-            {
-                Ptr<AKAZE> detector_AKAZE = AKAZE::create(500);
-                detector = detector_AKAZE;
-                method = "AKAZE";
-            }
+            method = "AKAZE";
             break;
     }
 
     //Detect features and compute their descriptors
     vector<KeyPoint> keypointsObj, keypointsImg;
+    keypointsObj = KeyPointDetection(obj.clone(), keypointType);
+    keypointsImg = KeyPointDetection(img.clone(), keypointType);
+
     Mat descriptorsObj, descriptorsImg;
-    detector->detectAndCompute(obj.clone(), Mat(), keypointsObj, descriptorsObj);
-    detector->detectAndCompute(img.clone(), Mat(), keypointsImg, descriptorsImg);
+    descriptorsObj = KeyPointDescription(obj.clone(), keypointsObj, keypointType);
+    descriptorsImg = KeyPointDescription(img.clone(), keypointsImg, keypointType);
 
     ///Match the two images using the computed descriptors
     //Brute force matching
@@ -177,7 +231,7 @@ int main(int argc, const char** argv)
     detectAndMatch(kb_obj_loc, kb_img_loc, 1);
 
     ///4.3
-    /*
+
     double max_dist = 0;
     double min_dist = 0;
     ///Quick calculation of max and min distances between keypoints
@@ -200,7 +254,6 @@ int main(int argc, const char** argv)
     Mat img_matches;
     drawMatches(img_1, keypoints_1, img_2, keypoints_2, good_matches, img_matches, Scalar::all(-1), Scalar::all(-1), );
 
-    */
 
     //Mat H = findHomography(obj, scene, RANSAC);
 }
