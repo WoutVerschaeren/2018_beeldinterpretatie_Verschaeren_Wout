@@ -11,7 +11,7 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="-image_colour=/home/wout/Downloads/imageColor.jpg -image_bimodal=/home/wout/Downloads/imageBimodal.jpg -image_adapted=/home/wout/Downloads/imageColorAdapted.jpg" />
+				<Option parameters="-image1=/home/student/Downloads/strawberry1.tif -image2=/home/student/Downloads/strawberry2.tif" />
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>
