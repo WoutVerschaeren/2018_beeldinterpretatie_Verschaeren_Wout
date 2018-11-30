@@ -1,0 +1,6 @@
+Project -> Build options... -> Linker settings: Other linker options
+`pkg-config opencv --libs`
+
+Project -> Set programs' arguments
+-image1=/home/student/Downloads/strawberry1.tif
+-image2=/home/student/Downloads/strawberry2.tif
