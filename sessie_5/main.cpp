@@ -97,10 +97,11 @@ Ptr<KNearest> trainkNN(Mat trainingData, Mat labels)
 
     kNN->setIsClassifier(true);
     kNN->setAlgorithmType(KNearest::Types::BRUTE_FORCE);
-    kNN->setDefaultK(1);
+    kNN->setDefaultK(3);
 
     kNN->train(trainingDataKNN);
 
+    cout << "Hier geraakt " << endl;
     return kNN;
 }
 
@@ -109,23 +110,32 @@ Mat classify(Mat img, Ptr<KNearest> classifier)
     Mat mask = Mat::zeros(img.rows, img.cols, CV_8UC1);
     Mat result;
 
+    cout << "Hier geraakt " << endl;
     for ( int i = 0; i < img.rows; i++ )
     {
+        Mat allPixels(img.cols, 3, CV_32FC1);
+
         for ( int j = 0; j < img.cols; j++ )
         {
             Vec3b currPixel = img.at<Vec3b>(i, j);
             /// NAMEN VERANDEREN
-            Mat hsvpixel(1, 3, CV_32FC1);
-            hsvpixel.at<float>(i, 0) = currPixel[0];
-            hsvpixel.at<float>(i, 1) = currPixel[1];
-            hsvpixel.at<float>(i, 2) = currPixel[2];
 
-            classifier->findNearest(hsvpixel, classifier->getDefaultK(), result);
+            allPixels.at<float>(j, 0) = currPixel[0];
+            allPixels.at<float>(j, 1) = currPixel[1];
+            allPixels.at<float>(j, 2) = currPixel[2];
 
-            imshow("Tetten", result);    waitKey(0);
+            classifier->findNearest(allPixels, classifier->getDefaultK(), result);
+
+            if ( result.at<float>(j) == 1)
+            {
+                mask.at<uchar>(i, j) = 255;
+            }
         }
     }
 
+    //imshow("Tetten", result);    waitKey(0);
+    cout << "Hier geraakt " << endl;
+    imshow("Tetters", mask);    waitKey(0);
     return result;
 }
 
@@ -180,7 +190,7 @@ int main(int argc, const char** argv)
     //Foreground
     Mat trainingDataForeground(strawberryPts.size(), 3, CV_32FC1);
     //Label of aforeground pixel is a 1
-    Mat labels_fg = Mat::ones(strawberryPts.size(), 1, CV_32FC1);
+    Mat labels_fg = Mat::ones(strawberryPts.size(), 1, CV_32SC1);
 
     for( unsigned i = 0; i < strawberryPts.size(); i++ )
     {
@@ -193,7 +203,7 @@ int main(int argc, const char** argv)
 
     Mat trainingDataBackground(backgroundPts.size(), 3, CV_32FC1);
     //Label of a background pixel is 0
-    Mat labels_bg = Mat::zeros(backgroundPts.size(), 1, CV_32FC1);
+    Mat labels_bg = Mat::zeros(backgroundPts.size(), 1, CV_32SC1);
 
     for( unsigned i = 0; i < backgroundPts.size(); i++ )
     {
