@@ -67,6 +67,40 @@ Mat readImg(string img_loc)
     return img;
 }
 
+///Open and close an image
+Mat openAndClose(Mat img)
+{
+    //Opening
+    erode(img, img, Mat(), Point(-1,-1), 2);
+    dilate(img, img, Mat(), Point(-1,-1), 2);
+
+    //Closing
+    dilate(img, img, Mat(), Point(-1,-1), 5);
+    erode(img, img, Mat(), Point(-1,-1), 5);
+
+    return img;
+}
+
+///Mask an image
+Mat maskImage(Mat img, Mat mask)
+{
+    //Split the image into BGR channels
+    vector<Mat> channels;
+    split(img, channels);                           //Split the colour image into three different channels
+
+    //Apply the mask to every channel
+    vector<Mat> channels_masked = channels;
+    channels_masked[0] = channels[0] & mask;
+    channels_masked[1] = channels[1] & mask;
+    channels_masked[2] = channels[2] & mask;
+
+    //Merge the masked channels back into one image
+    Mat masked_img(img.rows, img.cols, CV_8UC3);    //Create a 3 channel image
+    merge(channels_masked,masked_img);
+
+    return masked_img;
+}
+
 
 ///Show an image, make it clickable (see above callback functions)
 int clickableImg(string img_loc, string title, void (*callbackFunc)(int, int, int, int, void*))
@@ -92,6 +126,7 @@ int clickableImg(string img_loc, string title, void (*callbackFunc)(int, int, in
 */
 Ptr<KNearest> trainkNN(Mat trainingData, Mat labels)
 {
+    //https://stackoverflow.com/a/30987458
     Ptr<KNearest> kNN = KNearest::create();
     Ptr<TrainData> trainingDataKNN = TrainData::create(trainingData, SampleTypes::ROW_SAMPLE, labels);
 
@@ -101,31 +136,37 @@ Ptr<KNearest> trainkNN(Mat trainingData, Mat labels)
 
     kNN->train(trainingDataKNN);
 
-    cout << "Hier geraakt " << endl;
     return kNN;
 }
 
+///Classify an image according to the trained classifier, return a mask
 Mat classify(Mat img, Ptr<KNearest> classifier)
 {
     Mat mask = Mat::zeros(img.rows, img.cols, CV_8UC1);
     Mat result;
 
-    cout << "Hier geraakt " << endl;
+    ///Loop through the image pixels, classify and create a mask of the result
     for ( int i = 0; i < img.rows; i++ )
     {
-        Mat allPixels(img.cols, 3, CV_32FC1);
-
+        ///Per row, create a vector (pixelRow) that stores the H, S and V channels of the pixels (currPixel) on that row
+        //Create the vector to store pixels
+        Mat pixelRow(img.cols, 3, CV_32FC1);
+        //Loop through a row
         for ( int j = 0; j < img.cols; j++ )
         {
             Vec3b currPixel = img.at<Vec3b>(i, j);
-            /// NAMEN VERANDEREN
 
-            allPixels.at<float>(j, 0) = currPixel[0];
-            allPixels.at<float>(j, 1) = currPixel[1];
-            allPixels.at<float>(j, 2) = currPixel[2];
+            pixelRow.at<float>(j, 0) = currPixel[0];
+            pixelRow.at<float>(j, 1) = currPixel[1];
+            pixelRow.at<float>(j, 2) = currPixel[2];
+        }
 
-            classifier->findNearest(allPixels, classifier->getDefaultK(), result);
+        ///Classify this row of pixels, store the results
+        classifier->findNearest(pixelRow, classifier->getDefaultK(), result);
 
+        ///Loop through the row again, open the mask if the pixel is classified as a strawberry
+        for ( int j = 0; j < img.cols; j++ )
+        {
             if ( result.at<float>(j) == 1)
             {
                 mask.at<uchar>(i, j) = 255;
@@ -133,10 +174,7 @@ Mat classify(Mat img, Ptr<KNearest> classifier)
         }
     }
 
-    //imshow("Tetten", result);    waitKey(0);
-    cout << "Hier geraakt " << endl;
-    imshow("Tetters", mask);    waitKey(0);
-    return result;
+    return mask;
 }
 
 
@@ -227,8 +265,16 @@ int main(int argc, const char** argv)
 
 
     ///5.4: CLASSIFY ALL PIXELS OF THE IMAGE, CREATE A MASK
-    classify(img_hsv, kNN);
 
+    ///Create a mask based on the classification of the image
+    Mat mask = classify(img_hsv, kNN);
+
+    ///Clean the mask
+    mask = openAndClose(mask);
+
+    ///Mask the image
+    img = maskImage(img, mask);
+    imshow("Masked image", img);  waitKey(0);
 
     //Verbeteren? Groene kanaal wegflikkeren!
 }
