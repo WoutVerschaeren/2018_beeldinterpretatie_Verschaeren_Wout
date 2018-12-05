@@ -21,5 +21,5 @@ rijpe aarbeien te detecteren.
   en visualiseer met een masker de resterende pixels.
 
 * **EXTRA**: Hoe kan je de segmentatie verbeteren? Denk na over het feit dat een
-  rijpe aarbei meer rood en minder groen componenten geven.
+  rijpe aarbei meer rood- en minder groencomponenten geeft.
 
