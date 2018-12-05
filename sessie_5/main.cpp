@@ -1,12 +1,15 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include <opencv2/ml.hpp>
 
 using namespace std;
 using namespace cv;
+using namespace cv::ml;
 
 vector<Point2f> strawberryPts;
 vector<Point2f> backgroundPts;
 
+///Mouse callback function for the foreground
 void strawberryCb(int event, int x, int y, int flags, void* userdata)
 {
     if  ( event == EVENT_LBUTTONDOWN )
@@ -28,6 +31,7 @@ void strawberryCb(int event, int x, int y, int flags, void* userdata)
     }
 }
 
+///Mouse callback function for the background
 void backgroundCb(int event, int x, int y, int flags, void* userdata)
 {
     if  ( event == EVENT_LBUTTONDOWN )
@@ -49,19 +53,26 @@ void backgroundCb(int event, int x, int y, int flags, void* userdata)
     }
 }
 
-
-int clickableImg(string img_loc, string title, void (*callbackFunc)(int, int, int, int, void*))
+Mat readImg(string img_loc)
 {
-    ///Read and show the image
+    ///Read the image
     Mat img = imread(img_loc);
     //Check if the images can be found
     if ( img.empty() ){
         cerr << "One or more images can't be found.";
-        return -1;
+        Mat err;
+        return err;
     }
 
-    //Blur the image a bit so we don't accidentally click the black points of the strawberry
-    GaussianBlur(img, img, Size(5, 5), 0, 0 );
+    return img;
+}
+
+
+///Show an image, make it clickable (see above callback functions)
+int clickableImg(string img_loc, string title, void (*callbackFunc)(int, int, int, int, void*))
+{
+    ///Read and show the image
+    Mat img = readImg(img_loc);
 
     //Create a window
     namedWindow(title, WINDOW_AUTOSIZE);
@@ -69,9 +80,55 @@ int clickableImg(string img_loc, string title, void (*callbackFunc)(int, int, in
     setMouseCallback(title, callbackFunc, &img);
     //Show the image
     imshow(title, img);    waitKey(0);
+    destroyWindow(title);
 
     return 0;
 }
+
+///Train a K-Nearest-Neighbour classifier
+/*
+    trainingData: vector containing all the training points
+    labels: vector containing the descriptors of the training points
+*/
+Ptr<KNearest> trainkNN(Mat trainingData, Mat labels)
+{
+    Ptr<KNearest> kNN = KNearest::create();
+    Ptr<TrainData> trainingDataKNN = TrainData::create(trainingData, SampleTypes::ROW_SAMPLE, labels);
+
+    kNN->setIsClassifier(true);
+    kNN->setAlgorithmType(KNearest::Types::BRUTE_FORCE);
+    kNN->setDefaultK(1);
+
+    kNN->train(trainingDataKNN);
+
+    return kNN;
+}
+
+Mat classify(Mat img, Ptr<KNearest> classifier)
+{
+    Mat mask = Mat::zeros(img.rows, img.cols, CV_8UC1);
+    Mat result;
+
+    for ( int i = 0; i < img.rows; i++ )
+    {
+        for ( int j = 0; j < img.cols; j++ )
+        {
+            Vec3b currPixel = img.at<Vec3b>(i, j);
+            /// NAMEN VERANDEREN
+            Mat hsvpixel(1, 3, CV_32FC1);
+            hsvpixel.at<float>(i, 0) = currPixel[0];
+            hsvpixel.at<float>(i, 1) = currPixel[1];
+            hsvpixel.at<float>(i, 2) = currPixel[2];
+
+            classifier->findNearest(hsvpixel, classifier->getDefaultK(), result);
+
+            imshow("Tetten", result);    waitKey(0);
+        }
+    }
+
+    return result;
+}
+
 
 int main(int argc, const char** argv)
 {
@@ -109,33 +166,59 @@ int main(int argc, const char** argv)
     cout << "BackgroundPts: " << backgroundPts << endl;
 
 
-    /*
+    ///5.2: DETERMINING A DESCRIPTOR: HSV IMAGE
+
+    ///Convert the image to HSV and blur
+    Mat img = readImg(image1_loc);
     Mat img_hsv;
     cvtColor(img, img_hsv, COLOR_BGR2HSV);
 
+    //Blur the image a bit so the clicked points arent using the black dots on the strawberry
+    GaussianBlur(img_hsv, img_hsv, Size(5, 5), 0, 0 );
+
+    ///Collect the training data and determine a label
+    //Foreground
     Mat trainingDataForeground(strawberryPts.size(), 3, CV_32FC1);
+    //Label of aforeground pixel is a 1
     Mat labels_fg = Mat::ones(strawberryPts.size(), 1, CV_32FC1);
 
-    for( int i = 0; i < strawberryPts.size(); i++ )
+    for( unsigned i = 0; i < strawberryPts.size(); i++ )
     {
+        //Label or descriptor: the hsv representation of the pixel
         Vec3b descriptor = img_hsv.at<Vec3b>(strawberryPts[i].y, strawberryPts[i].x);
         trainingDataForeground.at<float>(i, 0) = descriptor[0];
         trainingDataForeground.at<float>(i, 1) = descriptor[1];
         trainingDataForeground.at<float>(i, 2) = descriptor[2];
     }
 
-    //Zelfde voor bg: Mat trainingDataBackground(backgroundPts.size(), 3, CV_32FC1);
+    Mat trainingDataBackground(backgroundPts.size(), 3, CV_32FC1);
+    //Label of a background pixel is 0
+    Mat labels_bg = Mat::zeros(backgroundPts.size(), 1, CV_32FC1);
 
+    for( unsigned i = 0; i < backgroundPts.size(); i++ )
+    {
+        //Label or descriptor: the hsv representation of the pixel
+        Vec3b descriptor = img_hsv.at<Vec3b>(backgroundPts[i].y, backgroundPts[i].x);
+        trainingDataBackground.at<float>(i, 0) = descriptor[0];
+        trainingDataBackground.at<float>(i, 1) = descriptor[1];
+        trainingDataBackground.at<float>(i, 2) = descriptor[2];
+    }
+
+    //Concatenate both vectors into 1 trainingData vector and 1 label vector
     Mat trainingData, labels;
     vconcat(trainingDataForeground, trainingDataBackground, trainingData);
     vconcat(labels_fg, labels_bg, labels);
-    */
 
-    /*
-    ///Training a 1 Nearest Neighbour Classifier
-    Ptr<KNearest> kNN = KNearest::create();
-    Ptr<TrainData> trainingDataKNN = TrainData::create(trainingData, ,);
-    */
+
+    ///5.3: TRAIN A CLASSIFIER USING THE ABOVE DATA (KNN, NBC AND SVM)
+
+    ///Train the K-Nearest-Neighbour classifier
+    Ptr<KNearest> kNN = trainkNN(trainingData, labels);
+
+
+    ///5.4: CLASSIFY ALL PIXELS OF THE IMAGE, CREATE A MASK
+    classify(img_hsv, kNN);
+
 
     //Verbeteren? Groene kanaal wegflikkeren!
 }
