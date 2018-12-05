@@ -9,6 +9,11 @@ using namespace cv::ml;
 vector<Point2f> strawberryPts;
 vector<Point2f> backgroundPts;
 
+//Using global variables was the easiest way of not having to copy/paste code
+Ptr<KNearest> kNN;
+Ptr<NormalBayesClassifier> NBC;
+Ptr<SVM> SVMach;
+
 ///Mouse callback function for the foreground
 void strawberryCb(int event, int x, int y, int flags, void* userdata)
 {
@@ -101,6 +106,23 @@ Mat maskImage(Mat img, Mat mask)
     return masked_img;
 }
 
+///Delete the green channel of an image
+Mat deleteGreen(Mat img)
+{
+    //Split the image into BGR channels
+    vector<Mat> channels;
+    split(img, channels);                           //Split the colour image into three different channels
+
+    //Delete the green channel
+    channels[1] = 0;
+
+    //Merge the masked channels back into one image
+    Mat img_noGreen(img.rows, img.cols, CV_8UC3);    //Create a 3 channel image
+    merge(channels,img_noGreen);
+
+    return img_noGreen;
+}
+
 
 ///Show an image, make it clickable (see above callback functions)
 int clickableImg(string img_loc, string title, void (*callbackFunc)(int, int, int, int, void*))
@@ -127,7 +149,7 @@ int clickableImg(string img_loc, string title, void (*callbackFunc)(int, int, in
 Ptr<KNearest> trainkNN(Mat trainingData, Mat labels)
 {
     //https://stackoverflow.com/a/30987458
-    Ptr<KNearest> kNN = KNearest::create();
+    kNN = KNearest::create();
     Ptr<TrainData> trainingDataKNN = TrainData::create(trainingData, SampleTypes::ROW_SAMPLE, labels);
 
     kNN->setIsClassifier(true);
@@ -139,8 +161,50 @@ Ptr<KNearest> trainkNN(Mat trainingData, Mat labels)
     return kNN;
 }
 
+///Train a Normal Bayes classifier
+/*
+    trainingData: vector containing all the training points
+    labels: vector containing the descriptors of the training points
+*/
+Ptr<NormalBayesClassifier> trainBayes(Mat trainingData, Mat labels)
+{
+    NBC = NormalBayesClassifier::create();
+    Ptr<TrainData> trainingDataNBC = TrainData::create(trainingData, SampleTypes::ROW_SAMPLE, labels);
+
+    NBC->train(trainingDataNBC);
+
+    return NBC;
+}
+
+///Train a Support Vector Machine
+/*
+    trainingData: vector containing all the training points
+    labels: vector containing the descriptors of the training points
+*/
+Ptr<SVM> trainSVM(Mat trainingData, Mat labels)
+{
+    //https://docs.opencv.org/master/d1/d73/tutorial_introduction_to_svm.html
+    SVMach = SVM::create();
+    Ptr<TrainData> trainingDataSVM = TrainData::create(trainingData, SampleTypes::ROW_SAMPLE, labels);
+
+    SVMach->setType(SVM::C_SVC);
+    SVMach->setKernel(SVM::LINEAR);
+    SVMach->setTermCriteria(TermCriteria(TermCriteria::MAX_ITER, 100, 1e-6));
+
+    SVMach->train(trainingDataSVM);
+
+    return SVMach;
+}
+
+
 ///Classify an image according to the trained classifier, return a mask
-Mat classify(Mat img, Ptr<KNearest> classifier)
+/*
+    img: an image
+    classifierType: 0: Nearest-Neighbour
+                    1: Normal Bayes Classifier
+                    2: Support Vector Machine
+*/
+Mat classify(Mat img, int classifierType)
 {
     Mat mask = Mat::zeros(img.rows, img.cols, CV_8UC1);
     Mat result;
@@ -162,12 +226,31 @@ Mat classify(Mat img, Ptr<KNearest> classifier)
         }
 
         ///Classify this row of pixels, store the results
-        classifier->findNearest(pixelRow, classifier->getDefaultK(), result);
+        switch(classifierType)
+        {
+            case 0 :
+            {
+                kNN->findNearest(pixelRow, kNN->getDefaultK(), result);
+                break;
+            }
+
+            case 1 :
+            {
+                NBC->predict(pixelRow, result);
+                break;
+            }
+
+            case 2 :
+            {
+                SVMach->predict(pixelRow, result);
+                break;
+            }
+        }
 
         ///Loop through the row again, open the mask if the pixel is classified as a strawberry
         for ( int j = 0; j < img.cols; j++ )
         {
-            if ( result.at<float>(j) == 1)
+            if ( result.at<float>(j) != 0)
             {
                 mask.at<uchar>(i, j) = 255;
             }
@@ -219,9 +302,12 @@ int main(int argc, const char** argv)
     ///Convert the image to HSV and blur
     Mat img = readImg(image1_loc);
     Mat img_hsv;
-    cvtColor(img, img_hsv, COLOR_BGR2HSV);
 
-    //Blur the image a bit so the clicked points arent using the black dots on the strawberry
+    //Delete the green channel of the image
+    Mat img_noGreen = deleteGreen(img);
+    cvtColor(img_noGreen, img_hsv, COLOR_BGR2HSV);
+
+    //Blur the image a bit so the clicked points arent using the black and green dots on the strawberry
     GaussianBlur(img_hsv, img_hsv, Size(5, 5), 0, 0 );
 
     ///Collect the training data and determine a label
@@ -261,20 +347,39 @@ int main(int argc, const char** argv)
     ///5.3: TRAIN A CLASSIFIER USING THE ABOVE DATA (KNN, NBC AND SVM)
 
     ///Train the K-Nearest-Neighbour classifier
-    Ptr<KNearest> kNN = trainkNN(trainingData, labels);
+    trainkNN(trainingData, labels);
+    trainBayes(trainingData, labels);
+    trainSVM(trainingData, labels);
 
 
     ///5.4: CLASSIFY ALL PIXELS OF THE IMAGE, CREATE A MASK
 
-    ///Create a mask based on the classification of the image
-    Mat mask = classify(img_hsv, kNN);
+    ///Create masks based on the classification of the image
+    /*
+        0: Nearest-Neighbour
+        1: Normal Bayes Classifier
+        2: Support Vector Machine
+    */
+    Mat maskKNN = classify(img_hsv, 0);
+    Mat maskNBC = classify(img_hsv, 1);
+    Mat maskSVM = classify(img_hsv, 2);
 
-    ///Clean the mask
-    mask = openAndClose(mask);
+    ///Clean the masks
+    maskKNN = openAndClose(maskKNN);
+    maskNBC = openAndClose(maskNBC);
+    maskSVM = openAndClose(maskSVM);
 
     ///Mask the image
-    img = maskImage(img, mask);
-    imshow("Masked image", img);  waitKey(0);
+    img = maskImage(img, maskKNN);
+    imshow("Masked image: kNN", img);  waitKey(0);
+
+    img = maskImage(img, maskNBC);
+    imshow("Masked image: NBC", img);  waitKey(0);
+
+    img = maskImage(img, maskSVM);
+    imshow("Masked image: SVM", img);  waitKey(0);
 
     //Verbeteren? Groene kanaal wegflikkeren!
+
+    return 0;
 }
