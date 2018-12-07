@@ -94,18 +94,12 @@ int main(int argc, const char** argv)
         }
 
         imshow("frames", canvas);
-        //Press space to pause
-        switch(waitKey(1))
-        {
-            case 33 :
-                break;
-
-            case 32 :
-                waitKey(0);
-
-            default :
-                break;
-        }
+        //Press space to pause, any other key to exit
+        int k = waitKey(1);
+        if ( k == 32 )
+            waitKey(0);
+        else if ( k >= 0 )
+            break;
     }
     // the camera will be deinitialized automatically in VideoCapture destructor
     return 0;
