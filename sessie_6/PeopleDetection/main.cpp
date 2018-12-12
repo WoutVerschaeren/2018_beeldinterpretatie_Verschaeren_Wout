@@ -42,44 +42,40 @@ int main(int argc, const char** argv)
     namedWindow("frames", WINDOW_AUTOSIZE);
 
     HOGDescriptor hog;
+    //Load standard people detector
     hog.setSVMDetector(HOGDescriptor::getDefaultPeopleDetector());
+
+    vector<Point> path;
 
     while(cap.read(frame))
     {
         Mat frameHOG = frame.clone();
         vector<Rect> objectsHOG;
+        vector<double> foundWeights;
+        double thresh = 0.2;
 
-        //Detect the faces
-        hog.detectMultiScale(frameHOG, objectsHOG, 0, Size(8,8), Size(32,32), 1.05, 2);
+        //Detect the people
+        hog.detectMultiScale(frameHOG, objectsHOG, foundWeights, thresh);
 
         //Plot rects
         Mat canvas = frame.clone();
-        for( int i = 0; i < objectsHOG.size(); i++ )
+        for( size_t i = 0; i < objectsHOG.size(); i++ )
         {
-            //Determine the center of the circle, the radius, the text position and the colour
-            int centerX = objectsHOG[i].x + objectsHOG[i].width/2;
-            int centerY = objectsHOG[i].y + objectsHOG[i].height/2;
-            int radius = (objectsHOG[i].width + objectsHOG[i].height)/2;
-            Scalar colour = Scalar(255, 255, 0);
+            //Draw a rectangle around the detected person
+            Scalar colour = Scalar(0, 255, 0);
+            rectangle(canvas, objectsHOG[i], colour, 1, 8, 0);
 
-            circle(canvas, Point(centerX, centerY), radius, colour, 1);
+            int pathX = objectsHOG[i].x + objectsHOG[i].width/2;
+            int pathY = objectsHOG[i].y + objectsHOG[i].height/2;
+
+            path.push_back(Point(pathX, pathY));
         }
 
-        /*for( size_t i = 0; i < objectsLBP.size(); i++ )
+        Scalar colour = Scalar(255, 255, 255);
+        for ( int j = 0; j < path.size(); j++ )
         {
-            //Determine the center of the circle, the radius, the text position and the colour
-            int centerX = objectsLBP[i].x + objectsLBP[i].width/2;
-            int centerY = objectsLBP[i].y + objectsLBP[i].height/2;
-            int radius = (objectsLBP[i].width + objectsLBP[i].height)/2;
-            int textX = objectsLBP[i].x + objectsLBP[i].width;
-            int textY = objectsLBP[i].y + objectsLBP[i].height;
-            Scalar colour = Scalar(0, 0, 255);
-
-            circle(canvas, Point(centerX, centerY), radius, colour, 1);
-            stringstream temp;
-            temp << (int)scoreLBP[i];
-            putText(canvas, temp.str(), Point(textX, textY), FONT_HERSHEY_SIMPLEX, 1, colour);
-        }*/
+            polylines(canvas, path, false, colour, 5);
+        }
 
         imshow("frames", canvas);
         //Press space to pause, any other key to exit
