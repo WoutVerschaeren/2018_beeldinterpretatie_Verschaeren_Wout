@@ -43,6 +43,7 @@ int main(int argc, const char** argv)
     //Load standard people detector
     hog.setSVMDetector(HOGDescriptor::getDefaultPeopleDetector());
 
+    //A vector of points to track the persons path
     vector<Point> path;
 
     while(cap.read(frame))
@@ -63,19 +64,20 @@ int main(int argc, const char** argv)
             Scalar colour = Scalar(0, 255, 0);
             rectangle(canvas, objectsHOG[i], colour, 1, 8, 0);
 
+            //Save the position in a vector of points
             int pathX = objectsHOG[i].x + objectsHOG[i].width/2;
             int pathY = objectsHOG[i].y + objectsHOG[i].height/2;
-
             path.push_back(Point(pathX, pathY));
         }
 
+        //Draw the path
         Scalar colour = Scalar(255, 255, 255);
         for ( int j = 0; j < path.size(); j++ )
         {
             polylines(canvas, path, false, colour);
         }
 
-        imshow("frames", canvas);
+        imshow("Frames (space to pause, anyt other key to quit)", canvas);
         //Press space to pause, any other key to exit
         int k = waitKey(1);
         if ( k == 32 )

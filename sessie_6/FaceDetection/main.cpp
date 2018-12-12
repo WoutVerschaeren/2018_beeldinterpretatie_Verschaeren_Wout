@@ -57,7 +57,7 @@ int main(int argc, const char** argv)
         detectorHAAR.detectMultiScale(frameHAAR, objectsHAAR, scoreHAAR, 1.05, 3);
         detectorLBP.detectMultiScale(frameLBP, objectsLBP, scoreLBP, 1.05, 3);
 
-        //Plot rects
+        //Draw circles where faces have been detected, write the score next to it
         Mat canvas = frame.clone();
         for( int i = 0; i < objectsHAAR.size(); i++ )
         {
@@ -75,6 +75,8 @@ int main(int argc, const char** argv)
             putText(canvas, temp.str(), Point(textX, textY), FONT_HERSHEY_SIMPLEX, 1, colour);
         }
 
+        //Same thing for LBP
+        //               ^ Faster, but less accurate than HAAR
         for( size_t i = 0; i < objectsLBP.size(); i++ )
         {
             //Determine the center of the circle, the radius, the text position and the colour
@@ -91,7 +93,7 @@ int main(int argc, const char** argv)
             putText(canvas, temp.str(), Point(textX, textY), FONT_HERSHEY_SIMPLEX, 1, colour);
         }
 
-        imshow("frames", canvas);
+        imshow("Frames (press space to pause, any other key to quit)", canvas);
         //Press space to pause, any other key to exit
         int k = waitKey(1);
         if ( k == 32 )
