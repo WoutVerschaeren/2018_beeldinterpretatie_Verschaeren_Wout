@@ -3,5 +3,3 @@ Project -> Build options... -> Linker settings: Other linker options
 
 Project -> Set programs' arguments
 -people_vid=/home/student/Downloads/people.mp4
--haarcascade=haarcascade_frontalface_alt.xml
--lbpcascade=lbpcascade_frontalface_improved.xml
