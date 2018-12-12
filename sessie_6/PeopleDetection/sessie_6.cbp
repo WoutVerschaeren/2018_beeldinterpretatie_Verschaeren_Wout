@@ -11,7 +11,7 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="-faces_vid=/home/student/Downloads/faces.mp4 -people_vid=/home/student/Downloads/people.mp4 -haarcascade=haarcascade_frontalface_alt.xml -lbpcascade=lbpcascade_frontalface_improved.xml" />
+				<Option parameters="-people_vid=/home/student/Downloads/people.mp4 -haarcascade=haarcascade_frontalface_alt.xml -lbpcascade=lbpcascade_frontalface_improved.xml" />
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>

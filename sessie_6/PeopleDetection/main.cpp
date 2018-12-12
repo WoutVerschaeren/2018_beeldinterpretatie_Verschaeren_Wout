@@ -9,8 +9,7 @@ int main(int argc, const char** argv)
     ///Adding a little help option and command line parser input
     CommandLineParser parser(argc, argv,
         "{help h usage ?  |      | print this message   }"
-        "{faces_vid p1    |      | <required> path to a video with faces   }"
-        "{people_vid p2   |      | <required> path to a video of people walking  }"
+        "{people_vid p1   |      | <required> path to a video of people walking  }"
         "{haarcascade p3  |      | <required> path to the haarcascade facedetection xml  }"
         "{lbpcascade p4   |      | <required> path to the lbpcascade facedetection xml  }"
     );
