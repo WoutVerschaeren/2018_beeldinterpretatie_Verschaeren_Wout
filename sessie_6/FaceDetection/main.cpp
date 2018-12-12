@@ -23,11 +23,10 @@ int main(int argc, const char** argv)
 
     ///Collect data from arguments
     string faces_vid_loc(parser.get<string>("faces_vid"));
-    string people_vid_loc(parser.get<string>("people_vid"));
     string haarcascade_loc(parser.get<string>("haarcascade"));
     string lbpcascade_loc(parser.get<string>("lbpcascade"));
     //Check of de argumenten niet leeg zijn
-    if ( faces_vid_loc.empty() || people_vid_loc.empty() || haarcascade_loc.empty() || lbpcascade_loc.empty() ){
+    if ( faces_vid_loc.empty() || haarcascade_loc.empty() || lbpcascade_loc.empty() ){
         cerr << "There's something wrong with your arguments." << endl;
         parser.printMessage();
         return -1;
