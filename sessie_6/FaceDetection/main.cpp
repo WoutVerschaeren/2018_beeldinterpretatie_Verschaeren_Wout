@@ -103,14 +103,3 @@ int main(int argc, const char** argv)
     // the camera will be deinitialized automatically in VideoCapture destructor
     return 0;
 }
-
-
-
-
-
-/*
-HOGDescriptor hog;
-hog.set
-
-hog.detectMultiScale();
-*/
