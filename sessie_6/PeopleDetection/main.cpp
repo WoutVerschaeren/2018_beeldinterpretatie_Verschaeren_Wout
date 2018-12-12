@@ -10,8 +10,6 @@ int main(int argc, const char** argv)
     CommandLineParser parser(argc, argv,
         "{help h usage ?  |      | print this message   }"
         "{people_vid p1   |      | <required> path to a video of people walking  }"
-        "{haarcascade p3  |      | <required> path to the haarcascade facedetection xml  }"
-        "{lbpcascade p4   |      | <required> path to the lbpcascade facedetection xml  }"
     );
 
     if (parser.has("help"))
@@ -74,7 +72,7 @@ int main(int argc, const char** argv)
         Scalar colour = Scalar(255, 255, 255);
         for ( int j = 0; j < path.size(); j++ )
         {
-            polylines(canvas, path, false, colour, 5);
+            polylines(canvas, path, false, colour);
         }
 
         imshow("frames", canvas);
