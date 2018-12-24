@@ -27,4 +27,25 @@ int main(int argc, const char** argv)
         parser.printMessage();
         return -1;
     }
+
+    //https://docs.opencv.org/3.0-beta/modules/videoio/doc/reading_and_writing_video.html
+    VideoCapture cap(mario_vid_loc); // open the video
+    if(!cap.isOpened())  // check if we succeeded
+        return -1;
+
+    Mat frame;
+    namedWindow("frames", WINDOW_AUTOSIZE);
+
+    while(cap.read(frame))
+    {
+        imshow("Frames (press space to pause, any other key to quit)", frame);
+        //Press space to pause, any other key to exit
+        int k = waitKey(25);
+        if ( k == 32 )
+            waitKey(0);
+        else if ( k >= 0 )
+            break;
+    }
+    // the camera will be deinitialized automatically in VideoCapture destructor
+    return 0;
 }
