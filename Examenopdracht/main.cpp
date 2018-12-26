@@ -4,6 +4,16 @@
 using namespace std;
 using namespace cv;
 
+const int slider_max = 100;
+int thr;                        //max threshold value
+int alpha_slider_thr = 20;      //slider for threshold value
+
+
+static void thr_on_trackbar(int, void *)
+{
+    thr = alpha_slider_thr;
+}
+
 ///Mask the image so all white pixels are deleted
 Mat maskNoWhite(Mat img)
 {
@@ -43,7 +53,9 @@ Mat matchSingle(Mat img, Mat tmpl)
     minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc, Mat());
     matchLoc = maxLoc;
 
-    if ( maxVal >= 0.2 )
+    double thr_norm = (thr*1.0)/100;
+
+    if ( maxVal >= thr_norm )
     {
         //Accept the match
         Mat best_hit = img.clone();
@@ -55,6 +67,30 @@ Mat matchSingle(Mat img, Mat tmpl)
     {
         //Reject the match
         return img;
+    }
+}
+
+void slider(Mat img, Mat templ)
+{
+    String imTitle = "Super Mario World";
+    namedWindow(imTitle, WINDOW_AUTOSIZE); // Create Window
+    //Create S slider
+    createTrackbar("Mario threshold", imTitle, &alpha_slider_thr, slider_max, thr_on_trackbar);
+
+    thr_on_trackbar(alpha_slider_thr, 0);
+
+    while ( true )
+    {
+        Mat best_hit = matchSingle(img, templ);
+        //Show the image with the mask applied
+        imshow(imTitle, best_hit);
+
+        int k = waitKey(10);
+        if ( k == 32 ) //spacebar
+        {
+            destroyWindow(imTitle);
+            break;
+        }
     }
 }
 
@@ -106,7 +142,7 @@ int main(int argc, const char** argv)
         int k = waitKey(10);
         if ( k == 32 )
         {
-            waitKey(0);
+            slider(frame, minimario);
         }
         else if ( k >= 0 )
             break;
