@@ -14,28 +14,6 @@ static void thr_on_trackbar(int, void *)
     thr = alpha_slider_thr;
 }
 
-///Mask the image so all white pixels are deleted
-Mat maskNoWhite(Mat img)
-{
-    //Split the image into BGR channels
-    vector<Mat> channels;
-    split(img, channels);                           //Split the colour image into three different channels
-
-    Mat mask = (channels[0] < 255) & (channels[1] < 255) & (channels[2] < 255);
-
-    //Apply the mask to every channel
-    vector<Mat> channels_masked = channels;
-    channels_masked[0] = channels[0] & mask;
-    channels_masked[1] = channels[1] & mask;
-    channels_masked[2] = channels[2] & mask;
-
-    //Merge the masked channels back into one image
-    Mat masked_img(img.rows, img.cols, CV_8UC3);    //Create a 3 channel image
-    merge(channels_masked,masked_img);
-
-    return masked_img;
-}
-
 ///Finds a match in the source image src using the template tmpl
 Mat matchSingle(Mat img, Mat tmpl)
 {
@@ -122,7 +100,6 @@ int main(int argc, const char** argv)
 
     //int templ = 1;
     Mat minimario = imread(mini_mario_loc);
-    minimario = maskNoWhite(minimario);
 
     //https://docs.opencv.org/3.0-beta/modules/videoio/doc/reading_and_writing_video.html
     VideoCapture cap(mario_vid_loc); // open the video
