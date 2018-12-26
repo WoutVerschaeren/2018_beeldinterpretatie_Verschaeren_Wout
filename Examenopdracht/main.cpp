@@ -77,8 +77,9 @@ int main(int argc, const char** argv)
     ///Adding a little help option and command line parser input
     CommandLineParser parser(argc, argv,
         "{help h usage ?  |      | print this message   }"
-        "{mario_vid p1    |      | <required> path to a video of a Super Mario World level   }"
-        "{mini_mario p2   |      | <required> path to a template of Mini Mario's head   }"
+        "{mario_vid       |      | <required> path to a video of a Super Mario World level   }"
+        "{mini_marioR     |      | <required> path to a template of Mini Mario's head, facing right   }"
+        "{mini_marioL     |      | <required> path to a template of Mini Mario's head, facing left   }"
     );
 
     if (parser.has("help"))
@@ -90,16 +91,18 @@ int main(int argc, const char** argv)
 
     ///Collect data from arguments
     string mario_vid_loc(parser.get<string>("mario_vid"));
-    string mini_mario_loc(parser.get<string>("mini_mario"));
+    string mini_marioR_loc(parser.get<string>("mini_marioR"));
+    string mini_marioL_loc(parser.get<string>("mini_marioL"));
     //Check of de argumenten niet leeg zijn
-    if ( mario_vid_loc.empty() || mini_mario_loc.empty() ){
+    if ( mario_vid_loc.empty() || mini_marioR_loc.empty() || mini_marioL_loc.empty() ){
         cerr << "There's something wrong with your arguments." << endl;
         parser.printMessage();
         return -1;
     }
 
     //int templ = 1;
-    Mat minimario = imread(mini_mario_loc);
+    Mat minimarioR = imread(mini_marioR_loc);
+    Mat minimarioL = imread(mini_marioL_loc);
 
     //https://docs.opencv.org/3.0-beta/modules/videoio/doc/reading_and_writing_video.html
     VideoCapture cap(mario_vid_loc); // open the video
@@ -113,13 +116,13 @@ int main(int argc, const char** argv)
 
     while(cap.read(frame))
     {
-        Mat matched = matchSingle(frame, minimario);
+        Mat matched = matchSingle(frame, minimarioR);
         imshow("Frames (press space to pause, any other key to quit)", matched);
         //Press space to pause, any other key to exit
         int k = waitKey(10);
         if ( k == 32 )
         {
-            slider(frame, minimario);
+            slider(frame, minimarioR);
         }
         else if ( k >= 0 )
             break;
