@@ -11,7 +11,7 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="-mario_vid=SuperMarioWorld.mp4 -mini_mario=templates/minimario.png" />
+				<Option parameters="-mario_vid=SuperMarioWorld.mp4 -mini_marioR=templates/minimarioR.png -mini_marioL=templates/minimarioL.png" />
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>
