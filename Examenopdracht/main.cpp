@@ -4,9 +4,12 @@
 using namespace std;
 using namespace cv;
 
+const int AMOUNTTEMPL = 2;
+
 const int slider_max = 100;
 int thr;                        //max threshold value
-int alpha_slider_thr = 20;      //slider for threshold value
+int alpha_slider_thr = 35;      //slider for threshold value
+
 
 
 static void thr_on_trackbar(int, void *)
@@ -14,43 +17,45 @@ static void thr_on_trackbar(int, void *)
     thr = alpha_slider_thr;
 }
 
+
 ///Finds a match in the source image src using the template tmpl
-Mat matchSingle(Mat img, Mat tmpl)
+Mat match(Mat img, array<Mat, AMOUNTTEMPL> templates)
 {
     Mat result;
+    Mat canvas = img.clone();
+    array<double, AMOUNTTEMPL> maxVals;
+    array<Point, AMOUNTTEMPL> matchLocs;
 
-    ///Do the matching and normalize
-    matchTemplate(img.clone(), tmpl, result, TM_SQDIFF_NORMED);
-    //SQDIFF represents the best hits with the lowest values: invert!
-    result = 1.0-result;
-    //imshow("Match map single", result); waitKey(0);
+    for ( size_t i = 0; i < templates.size(); i++ ) {
+        ///Do the matching
+        matchTemplate(img.clone(), templates[i], result, TM_SQDIFF_NORMED);
+        //SQDIFF represents the best hits with the lowest values: invert!
+        result = 1.0-result;
 
-    ///Find the best hit
-    double minVal; double maxVal; Point minLoc; Point maxLoc;
-    Point matchLoc;
-    minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc, Mat());
-    matchLoc = maxLoc;
+        ///Find the best hit
+        double minVal; double maxVal; Point minLoc; Point maxLoc;
+        minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc, Mat());
+        //Remember the value and location of the best hit
+        maxVals[i] = maxVal;
+        matchLocs[i] = maxLoc;
 
-    double thr_norm = (thr*1.0)/100;
+        double thr_norm = (thr*1.0)/100;
 
-    if ( maxVal >= thr_norm )
-    {
-        //Accept the match
-        Mat best_hit = img.clone();
-        rectangle(best_hit, matchLoc, Point(matchLoc.x + tmpl.cols , matchLoc.y + tmpl.rows), Scalar::all(255), 2, 8, 0);
-
-        return best_hit;
+        //Is the best hit sufficient?
+        if ( maxVal >= thr_norm )
+        {
+            //Accept the match
+            rectangle(canvas, matchLocs[i], Point(matchLocs[i].x + templates[i].cols , matchLocs[i].y + templates[i].rows), Scalar::all(255), 2, 8, 0);
+        }
     }
-    else
-    {
-        //Reject the match
-        return img;
-    }
+
+
+    return canvas;
 }
 
-void slider(Mat img, Mat templ)
+void slider(Mat img, array<Mat, 2> templates)
 {
-    String imTitle = "Super Mario World";
+    String imTitle = "Edit the threshold for detecting Mario";
     namedWindow(imTitle, WINDOW_AUTOSIZE); // Create Window
     //Create S slider
     createTrackbar("Mario threshold", imTitle, &alpha_slider_thr, slider_max, thr_on_trackbar);
@@ -59,11 +64,11 @@ void slider(Mat img, Mat templ)
 
     while ( true )
     {
-        Mat best_hit = matchSingle(img, templ);
+        Mat best_hit = match(img, templates);
         //Show the image with the mask applied
         imshow(imTitle, best_hit);
 
-        int k = waitKey(10);
+        int k = waitKey(1);
         if ( k == 32 ) //spacebar
         {
             destroyWindow(imTitle);
@@ -101,8 +106,9 @@ int main(int argc, const char** argv)
     }
 
     //int templ = 1;
-    Mat minimarioR = imread(mini_marioR_loc);
-    Mat minimarioL = imread(mini_marioL_loc);
+    array<Mat, AMOUNTTEMPL> minimario;
+    minimario[0] = imread(mini_marioR_loc);
+    minimario[1] = imread(mini_marioL_loc);
 
     //https://docs.opencv.org/3.0-beta/modules/videoio/doc/reading_and_writing_video.html
     VideoCapture cap(mario_vid_loc); // open the video
@@ -116,13 +122,13 @@ int main(int argc, const char** argv)
 
     while(cap.read(frame))
     {
-        Mat matched = matchSingle(frame, minimarioR);
+        Mat matched = match(frame, minimario);
         imshow("Frames (press space to pause, any other key to quit)", matched);
         //Press space to pause, any other key to exit
         int k = waitKey(10);
         if ( k == 32 )
         {
-            slider(frame, minimarioR);
+            slider(frame, minimario);
         }
         else if ( k >= 0 )
             break;
