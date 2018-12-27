@@ -5,6 +5,7 @@ using namespace std;
 using namespace cv;
 
 const int AMOUNTTEMPL = 2;
+const int BUFSIZE = 10;
 const Scalar WHITE = Scalar(255, 255, 255);
 
 const int slider_max = 100;
@@ -158,6 +159,31 @@ void interpolatePath()
     }
 }
 
+void countJumps()
+{
+    array<Point, BUFSIZE> buffer;
+    array<bool, 3> jump;
+    bool jumping = 0;
+    int jumpCount = 0;
+
+    ///Fill the buffer initially with the first BUFSIZE elements of the path
+    for ( size_t i = 0; i < BUFSIZE; i++ )
+        buffer[i] = path.at(i);
+
+    for ( size_t i = BUFSIZE; i < path.size(); i++ )
+    {
+        for ( size_t j = 0; j < 3; j++ )
+        {
+            if ( !jumping && path.at(i+j) - buffer[(i+j)%BUFSIZE] < -35 )
+            {
+                jump[j] = 1;
+            }
+        }
+
+        buffer[i%BUFSIZE] = path.at(i);
+    }
+}
+
 int main(int argc, const char** argv)
 {
     ///Adding a little help option and command line parser input
@@ -225,17 +251,17 @@ int main(int argc, const char** argv)
     // the camera will be deinitialized automatically in VideoCapture destructor
 
     namedWindow("Mario's height plotted against time", WINDOW_AUTOSIZE);
-    Mat pathCanvas = Mat::zeros(frame.rows, path.size(), CV_8UC1);
     /*
+    Mat pathCanvas = Mat::zeros(frame.rows, path.size(), CV_8UC1);
     polylines(pathCanvas, path, false, WHITE);
     imshow("Mario's height plotted against time BAD", pathCanvas); waitKey(0);
-    pathCanvas = Mat::zeros(frame.rows, path.size(), CV_8UC1);
     */
 
     interpolatePath();
+
+    Mat pathCanvas = Mat::zeros(frame.rows, path.size(), CV_8UC1);
     polylines(pathCanvas, path, false, WHITE);
     imshow("Mario's height plotted against time", pathCanvas); waitKey(0);
-
     imwrite("mariopath.png", pathCanvas);
 
     return 0;
