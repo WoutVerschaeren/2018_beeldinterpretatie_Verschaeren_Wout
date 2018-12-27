@@ -5,6 +5,7 @@ using namespace std;
 using namespace cv;
 
 const int AMOUNTTEMPL = 2;
+const Scalar WHITE = Scalar(255, 255, 255);
 
 const int slider_max = 100;
 int thr;                        //max threshold value
@@ -76,14 +77,19 @@ Mat match(Mat img, array<Mat, AMOUNTTEMPL> templates, double frameCount)
     }
 
     indOfMax = getIndOfMax(maxVals);
-    if ( indOfMax != -1 )
+    int textX = canvas.rows / 32;
+    int textY = canvas.rows * 0.97;
+    if ( capHeight )
     {
-        if ( capHeight )
-        {
+        if ( indOfMax != -1 )
             path.push_back(Point(frameCount, matchLocs[indOfMax].y));
-            cout << "Capping" << endl;
-        }
+        else
+            path.push_back(Point(frameCount, -1));
+
+        putText(canvas, "Capturing height: on", Point(textX, textY), FONT_HERSHEY_SIMPLEX, 0.6, WHITE, 1);
     }
+    else
+        putText(canvas, "Capturing height: off", Point(textX, textY), FONT_HERSHEY_SIMPLEX, 0.6, WHITE, 1);
 
 
     return canvas;
@@ -109,6 +115,45 @@ void slider(Mat img, array<Mat, 2> templates, double frameCount)
         {
             destroyWindow(imTitle);
             break;
+        }
+    }
+}
+
+void interpolatePath()
+{
+    ///If the first elements of the vector path are invalid (y = -1), delete them
+    ///Same for the last elements
+    while ( path.front().y < 0 )
+        path.erase(path.begin());
+    while ( path.back().y < 0 )
+        path.erase(path.end());
+
+    ///Loop through the path, change the y coordinates of the invalid elements to interpolated values
+    //Start on i=1, since first element will never be invalid
+    for ( size_t i = 1; i < path.size(); i++ )
+    {
+        if ( path.at(i).y < 0 )
+        {
+            //Find the next valid element
+            int j = 1;
+            while ( path.at(i+j).y < 0 )
+                j++;
+
+            //Previous valid element and the y-difference between it and the next valid element
+            int previous = path.at(i-1).y;
+            int difference = path.at(i+j).y - previous;
+
+            //Loop through all the invalid elements, linearly interpolate their y-values
+            //between the previous and next valid elements
+            int k = 0;
+            while ( k < j )
+            {
+                path.at(i+k).y = previous + round( (k+1)*difference/(j+1) );
+                k++;
+            }
+
+            //Skip all the elements we just interpolated plus the next valid element
+            i += k;
         }
     }
 }
@@ -164,7 +209,7 @@ int main(int argc, const char** argv)
             frameCount++;
 
         Mat matched = match(frame, minimario, frameCount);
-        imshow("Frames (press space to pause, any other key to quit)", matched);
+        imshow("Super Mario World", matched);
         //Press space to pause, any other key to exit
         int k = waitKey(10);
         if ( k == 32 )
@@ -176,17 +221,21 @@ int main(int argc, const char** argv)
         else if ( k >= 0 )
             break;
     }
+    destroyWindow("Super Mario World");
     // the camera will be deinitialized automatically in VideoCapture destructor
 
+    namedWindow("Mario's height plotted against time", WINDOW_AUTOSIZE);
     Mat pathCanvas = Mat::zeros(frame.rows, path.size(), CV_8UC1);
-    namedWindow("Mario's path visualized", WINDOW_AUTOSIZE);
-    Scalar colour = Scalar(255, 255, 255);
-    for ( size_t i = 0; i < path.size(); i++ )
-    {
-        if ( path.at(i).y != 0 )
-            polylines(pathCanvas, path, false, colour);
-    }
+    /*
+    polylines(pathCanvas, path, false, WHITE);
+    imshow("Mario's height plotted against time BAD", pathCanvas); waitKey(0);
+    pathCanvas = Mat::zeros(frame.rows, path.size(), CV_8UC1);
+    */
+
+    interpolatePath();
+    polylines(pathCanvas, path, false, WHITE);
     imshow("Mario's height plotted against time", pathCanvas); waitKey(0);
+
     imwrite("mariopath.png", pathCanvas);
 
     return 0;
