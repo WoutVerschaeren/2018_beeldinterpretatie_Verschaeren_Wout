@@ -5,15 +5,16 @@ using namespace std;
 using namespace cv;
 
 const int AMOUNTTEMPL = 2;
-const int BUFSIZE = 10;
+const int BUFSIZE = 5;
 const Scalar WHITE = Scalar(255, 255, 255);
+const Scalar RED = Scalar(0, 0, 255);
 
 const int slider_max = 100;
 int thr;                        //max threshold value
 int alpha_slider_thr = 35;      //slider for threshold value
 
 vector<Point> path;
-bool capHeight = 0;
+bool capHeight = false;
 
 
 static void thr_on_trackbar(int, void *)
@@ -68,7 +69,6 @@ Mat match(Mat img, array<Mat, AMOUNTTEMPL> templates, double frameCount)
 
             //Draw a rectangle around the found match
             rectangle(canvas, matchLocs[i], Point(matchLocs[i].x + templates[i].cols , matchLocs[i].y + templates[i].rows), Scalar::all(255), 2, 8, 0);
-
         }
         else
         {
@@ -159,29 +159,65 @@ void interpolatePath()
     }
 }
 
-void countJumps()
+int countJumps(vector<Point>& jumpPoints)
 {
-    array<Point, BUFSIZE> buffer;
-    array<bool, 3> jump;
-    bool jumping = 0;
+    array<int, BUFSIZE> buffer;
+    array<bool, 3> jump = {false, false, false};
+    array<bool, 3> fall = {false, false, false};
+    bool jumping = false;
     int jumpCount = 0;
 
     ///Fill the buffer initially with the first BUFSIZE elements of the path
     for ( size_t i = 0; i < BUFSIZE; i++ )
-        buffer[i] = path.at(i);
+        buffer[i] = path.at(i).y;
 
+    ///Check if there is a jump compared to 5 elements ago, replace element in buffer with current
     for ( size_t i = BUFSIZE; i < path.size(); i++ )
     {
-        for ( size_t j = 0; j < 3; j++ )
+        //If a previous jump hasn't been registered
+        if ( !jumping )
         {
-            if ( !jumping && path.at(i+j) - buffer[(i+j)%BUFSIZE] < -35 )
+            //Shift the "certainty" array
+            jump[0] = jump[1];
+            jump[1] = jump[2];
+
+            //If the difference between this y and the one 10 ago is greater than 35
+            if ( path.at(i).y - buffer[(i)%BUFSIZE] < -35 )
+                jump[2] = true;
+            else
+                jump[2] = false;
+
+            //To filter out noise: necessary to register 3 jumps in succession
+            if ( jump[0] == 1 && jump[1] == 1 && jump[2] == 1 )
             {
-                jump[j] = 1;
+                jumpCount++;
+                jumpPoints.push_back(path.at(i));
+                jumping = true;                     //Mario is jumping, don't register another jump until he has come back down, see below
+                jump = {false, false, false};
+            }
+        }
+        //Analogous to the above
+        else
+        {
+            fall[0] = fall[1];
+            fall[1] = fall[2];
+
+            if ( path.at(i).y - buffer[(i)%BUFSIZE] > 18 )
+                fall[2] = true;
+            else
+                fall[2] = false;
+
+            if ( fall[0] == 1 && fall[1] == 1 && fall[2] == 1 )
+            {
+                jumping = false;
+                fall = {false, false, false};
             }
         }
 
-        buffer[i%BUFSIZE] = path.at(i);
+        buffer[i%BUFSIZE] = path.at(i).y;
     }
+
+    return jumpCount;
 }
 
 int main(int argc, const char** argv)
@@ -258,11 +294,18 @@ int main(int argc, const char** argv)
     */
 
     interpolatePath();
+    vector<Point> jumpPoints;
+    int jumpCount = countJumps(jumpPoints);
 
-    Mat pathCanvas = Mat::zeros(frame.rows, path.size(), CV_8UC1);
+    Mat pathCanvas = Mat::zeros(frame.rows, path.size(), CV_8UC3);
     polylines(pathCanvas, path, false, WHITE);
+    for ( size_t i = 0; i < jumpPoints.size(); i++ )
+        circle(pathCanvas, jumpPoints[i], 5, RED);
+    putText(pathCanvas, "Jumps: " + to_string(jumpCount), Point(20, 50), FONT_HERSHEY_SIMPLEX, 1, RED, 1);
+
     imshow("Mario's height plotted against time", pathCanvas); waitKey(0);
     imwrite("mariopath.png", pathCanvas);
+
 
     return 0;
 }
