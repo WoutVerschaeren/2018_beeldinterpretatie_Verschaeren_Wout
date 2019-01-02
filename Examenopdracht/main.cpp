@@ -320,7 +320,7 @@ int main(int argc, const char** argv)
 
     namedWindow("Mario's height plotted against time", WINDOW_AUTOSIZE);
     /*
-    Uncomment this to view why interpolation is neccessary
+    Uncomment this to view why interpolation is necessary
 
     Mat pathCanvas = Mat::zeros(frame.rows, path.size(), CV_8UC1);
     polylines(pathCanvas, path, false, WHITE);
