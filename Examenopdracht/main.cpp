@@ -17,11 +17,19 @@ vector<Point> path;
 bool capHeight = false;
 
 
+///Function for the trackbar
 static void thr_on_trackbar(int, void *)
 {
     thr = alpha_slider_thr;
 }
 
+///Checks which template match had the highest score
+/*
+    maxVals: Array containing the best hits of every checked template
+
+    Returns which match was the most probable
+    If no matches were found, returns -1
+*/
 int getIndOfMax(array<double, AMOUNTTEMPL> maxVals)
 {
     int maximum = 0;
@@ -39,6 +47,13 @@ int getIndOfMax(array<double, AMOUNTTEMPL> maxVals)
 }
 
 ///Finds a match in the source image src using the template tmpl
+/*
+    img: The image that needs to be searched
+    templates: An array containing the templates that need to be found
+    frameCount: An always increasing number, signifying how many frames have already been "recorded"
+
+    Returns the canvas, which is the current frame with possibly a rectangle around the match
+*/
 Mat match(Mat img, array<Mat, AMOUNTTEMPL> templates, double frameCount)
 {
     Mat result;
@@ -47,6 +62,7 @@ Mat match(Mat img, array<Mat, AMOUNTTEMPL> templates, double frameCount)
     array<Point, AMOUNTTEMPL> matchLocs;
     int indOfMax;
 
+    ///Match for every template, if the match gets accepted, draw a rectangle around it
     for ( size_t i = 0; i < templates.size(); i++ ) {
         ///Do the matching
         matchTemplate(img.clone(), templates[i], result, TM_SQDIFF_NORMED);
@@ -57,9 +73,10 @@ Mat match(Mat img, array<Mat, AMOUNTTEMPL> templates, double frameCount)
         double minVal; double maxVal; Point minLoc; Point maxLoc;
         minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc, Mat());
 
+        //Threshold is defined as a percentage
         double thr_norm = (thr*1.0)/100;
 
-        //Is the best hit sufficient?
+        //Does the best hit suffice?
         if ( maxVal >= thr_norm )
         {
             ///Accept the match
@@ -72,14 +89,18 @@ Mat match(Mat img, array<Mat, AMOUNTTEMPL> templates, double frameCount)
         }
         else
         {
-            //Reject the match
+            ///Reject the match
             maxVals[i] = 0;
         }
     }
 
+    //Find which match was the most probable
     indOfMax = getIndOfMax(maxVals);
+    //Set the text position
     int textX = canvas.rows / 32;
     int textY = canvas.rows * 0.97;
+
+    ///Show whether or not Mario is being "recorded" and save his position if he is
     if ( capHeight )
     {
         if ( indOfMax != -1 )
@@ -96,11 +117,18 @@ Mat match(Mat img, array<Mat, AMOUNTTEMPL> templates, double frameCount)
     return canvas;
 }
 
+///Function to show the current frame with a trackbar to finetune the template matching threshold
+/*
+    img: The image that needs to be searched
+    templates: An array containing the templates that need to be found
+    frameCount: An always increasing number, signifying how many frames have already been "recorded"
+*/
 void slider(Mat img, array<Mat, 2> templates, double frameCount)
 {
     String imTitle = "Edit the threshold for detecting Mario";
-    namedWindow(imTitle, WINDOW_AUTOSIZE); // Create Window
-    //Create S slider
+    //Create window
+    namedWindow(imTitle, WINDOW_AUTOSIZE);
+    //Create slider
     createTrackbar("Mario threshold", imTitle, &alpha_slider_thr, slider_max, thr_on_trackbar);
 
     thr_on_trackbar(alpha_slider_thr, 0);
@@ -120,6 +148,8 @@ void slider(Mat img, array<Mat, 2> templates, double frameCount)
     }
 }
 
+///If Mario was being recorded but there wasn't a match, we injected "holes" in his path (y-pos of -1).
+/// This function takes the path with holes and linearly interpolates between the detected points before and after each hole
 void interpolatePath()
 {
     ///If the first elements of the vector path are invalid (y = -1), delete them
@@ -159,6 +189,12 @@ void interpolatePath()
     }
 }
 
+///Function to count Mario's jumps based on a given path
+/*
+    jumpPoints: A vector in which the location of the jumps will be saved
+
+    Return how many jumps were detected
+*/
 int countJumps(vector<Point>& jumpPoints)
 {
     array<int, BUFSIZE> buffer;
@@ -171,17 +207,17 @@ int countJumps(vector<Point>& jumpPoints)
     for ( size_t i = 0; i < BUFSIZE; i++ )
         buffer[i] = path.at(i).y;
 
-    ///Check if there is a jump compared to 5 elements ago, replace element in buffer with current
+    ///Check if there is a jump compared to BUFSIZE elements ago, replace element in buffer with current
     for ( size_t i = BUFSIZE; i < path.size(); i++ )
     {
         //If a previous jump hasn't been registered
         if ( !jumping )
         {
-            //Shift the "certainty" array
+            //Shift the "certainty" array (See below)
             jump[0] = jump[1];
             jump[1] = jump[2];
 
-            //If the difference between this y and the one 10 ago is greater than 35
+            //If the difference between this y and the one BUFSIZE elements ago is greater than 35
             if ( path.at(i).y - buffer[(i)%BUFSIZE] < -35 )
                 jump[2] = true;
             else
@@ -248,22 +284,18 @@ int main(int argc, const char** argv)
         return -1;
     }
 
-    //int templ = 1;
+    ///Bundle all templates in an array
     array<Mat, AMOUNTTEMPL> minimario;
     minimario[0] = imread(mini_marioR_loc);
     minimario[1] = imread(mini_marioL_loc);
 
-    //Mat pad = imread("mariopath.png");
-    //imshow("Previously recorded path", pad); waitKey(0);
-
     //https://docs.opencv.org/3.0-beta/modules/videoio/doc/reading_and_writing_video.html
-    VideoCapture cap(mario_vid_loc); // open the video
-    if(!cap.isOpened())  // check if we succeeded
+    VideoCapture cap(mario_vid_loc); // Open the video
+    if(!cap.isOpened())  // Check if we succeeded
         return -1;
 
     Mat frame;
     int frameCount = -1;
-    //namedWindow("Frames (press space to pause, any other key to quit)", WINDOW_AUTOSIZE);
 
     while(cap.read(frame))
     {
@@ -288,15 +320,19 @@ int main(int argc, const char** argv)
 
     namedWindow("Mario's height plotted against time", WINDOW_AUTOSIZE);
     /*
+    Uncomment this to view why interpolation is neccessary
+
     Mat pathCanvas = Mat::zeros(frame.rows, path.size(), CV_8UC1);
     polylines(pathCanvas, path, false, WHITE);
     imshow("Mario's height plotted against time BAD", pathCanvas); waitKey(0);
     */
 
+    ///Interpolate the path, count the jumps and save their locations
     interpolatePath();
     vector<Point> jumpPoints;
     int jumpCount = countJumps(jumpPoints);
 
+    ///Draw an image showing the analysis and save it
     Mat pathCanvas = Mat::zeros(frame.rows, path.size(), CV_8UC3);
     polylines(pathCanvas, path, false, WHITE);
     for ( size_t i = 0; i < jumpPoints.size(); i++ )
