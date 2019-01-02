@@ -14,6 +14,6 @@ Terwijl het programma uitgevoerd wordt, kan het bediend worden met volgende toet
 
 | **Toets** | **Functie** |
 | --------- | ----------------- |
-| Spatiebalk | Pauzeren van de video en threshold voor het detecteren van Mario aanpassen |
-| C | Aan- en uitzetten van het capteren van Mario's hoogte doorheen de tijd |
+| Spatiebalk | Pauzeren van de video en een scherm openen om de threshold voor het detecteren van Mario aan te passen |
+| c | Aan- en uitzetten van het capteren van Mario's hoogte doorheen de tijd |
 | Andere toetsen | De statistieken bekijken |
