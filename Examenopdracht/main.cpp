@@ -9,8 +9,8 @@ const int BUFSIZE = 5;
 const Scalar WHITE = Scalar(255, 255, 255);
 const Scalar RED = Scalar(0, 0, 255);
 
-const int slider_max = 100;
-int thr;                        //max threshold value
+const int slider_max = 100;     //max threshold value
+int thr;                        //current threshold value
 int alpha_slider_thr = 35;      //slider for threshold value
 
 vector<Point> path;
